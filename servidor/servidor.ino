@@ -61,6 +61,10 @@ void tarefa2(void *parameter) {
         String url = endpointAPI+"?botao="+dado;
         http.begin(url);
         int httpCode = http.GET();
+        xSemaphoreTake(semaforo_serial, portMAX_DELAY);
+        Serial.println(url);
+        Serial.println(httpCode);
+        xSemaphoreGive(semaforo_serial);
         if(httpCode<=0){
           xSemaphoreTake(semaforo_serial, portMAX_DELAY);
           Serial.println("Erro na requisição");
