@@ -1,64 +1,63 @@
 #include <BLEDevice.h>
 
-#define bleServerName "ESP32_Server"
+#define bleServerName "ESP32_Server" //nome do servidor BLE que iremos conectar
 
-#define BOTAO1 18
+//GPIO dos Botões
+#define BOTAO1 18 
 #define BOTAO2 19
 
-static BLEUUID bmeServiceUUID("19B10000-E8F2-537E-4F6C-D104768A1214");
-static BLEUUID CharacteristicUUID("19B10001-E8F2-537E-4F6C-D104768A1214");
+static BLEUUID bmeServiceUUID("19B10000-E8F2-537E-4F6C-D104768A1214"); //UID do serviço BLE que iremos acessar
+static BLEUUID CharacteristicUUID("19B10001-E8F2-537E-4F6C-D104768A1214"); // UID da caracteristica BLE que iremos alterar
 
-static boolean doConnect = false;
+static boolean doConnect = false; // estado que indica que o servidor foi achado
 static boolean connected = false;
 
 static BLEAddress* pServerAddress;
 
 static BLERemoteCharacteristic* Characteristic;
 
-bool mostrar=false;
-String mensagem;
+bool enviar=false; //variavel que controla o envio
+String mensagem; // variavel da mensagem que sera enviada
 
-class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
-  void onResult(BLEAdvertisedDevice advertisedDevice) {
-    if (advertisedDevice.getName() == bleServerName) {
-      advertisedDevice.getScan()->stop();
-      pServerAddress = new BLEAddress(advertisedDevice.getAddress());
-      doConnect = true;
-      Serial.println("Dispositivo Encontrado");
+class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks { //classe personalizada de callback de retorno quando achar algum dispositivo BLE
+  void onResult(BLEAdvertisedDevice advertisedDevice) { // metodo OnResult que sobreescreve o original
+    if (advertisedDevice.getName() == bleServerName) { //se o dispositivo tiver o mesmo nome do servidor procurado
+      advertisedDevice.getScan()->stop(); //para o scan
+      pServerAddress = new BLEAddress(advertisedDevice.getAddress()); // pega o endereço do dispositivo
+      doConnect = true; // pronto para se conectar
     }
   }
 };
 
-void funcao_ISR_btn1()
+void funcao_ISR_btn1() //função ISR para quando o botão 1 for apertado
 {
   mensagem="botao1";
   mostrar=true;
 }
 
-void funcao_ISR_btn2()
+void funcao_ISR_btn2() //função ISR para quando o botão 2 for apertado
 {
   mensagem="botao2";
   mostrar=true;
 }
 
-void scan_BLE() {
-  BLEScan* pBLEScan = BLEDevice::getScan();
-  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-  pBLEScan->setActiveScan(true);
-  pBLEScan->start(30);
+void scan_BLE() { // função para scanear dispositivos BLE
+  BLEScan* pBLEScan = BLEDevice::getScan(); //seta o scan
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks()); //configura a classe de callback personalizada
+  pBLEScan->setActiveScan(true); //ativa o scan
+  pBLEScan->start(30); // inicia o scan por 30 segundos
 }
 
 void setup() {
-  Serial.begin(9600);
-  delay(500);
+  //Pinos dos botões como entrada
   pinMode(BOTAO1, INPUT);
   pinMode(BOTAO2, INPUT);
+  //ativa a interrupção  dos botões
   attachInterrupt(BOTAO1, funcao_ISR_btn1, RISING);
   attachInterrupt(BOTAO2, funcao_ISR_btn2, RISING);
-  Serial.println("Funcionando...");
-  BLEDevice::init("");
-  delay(500);
-  scan_BLE();
+  BLEDevice::init(""); //inicializa o dispositivo BLE
+  delay(500); //aguarda configuração
+  scan_BLE(); // faz o scan BLE
 }
 
 // Conectar ao servidor BLE com o nome, Serviço e Características especificados
@@ -67,17 +66,12 @@ bool conectarAoServidor(BLEAddress pAddress, String novoValor) {
 
   // Conectar ao Servidor BLE remoto.
   if (!pClient->connect(pAddress)) {
-    Serial.println("Falha ao conectar ao servidor");
     return false;
   }
-
-  Serial.println("Conectado ao servidor");
 
   // Obter uma referência ao serviço desejado no servidor BLE remoto.
   BLERemoteService* pRemoteService = pClient->getService(bmeServiceUUID);
   if (pRemoteService == nullptr) {
-    Serial.print("Falha ao encontrar nosso UUID de serviço: ");
-    Serial.println(bmeServiceUUID.toString().c_str());
     return false;
   }
 
@@ -85,18 +79,13 @@ bool conectarAoServidor(BLEAddress pAddress, String novoValor) {
   Characteristic = pRemoteService->getCharacteristic(CharacteristicUUID);
 
   if (Characteristic == nullptr) {
-    Serial.print("Falha ao encontrar nosso UUID de característica");
     return false;
   }
 
-  Serial.println("Encontradas nossas características");
-
-  
-  Characteristic->writeValue(novoValor.c_str(), novoValor.length());
+  Characteristic->writeValue(novoValor.c_str(), novoValor.length()); //envia a informação para o servidor BLE
 
    // Desconectar após a escrita
   pClient->disconnect();
-  Serial.println("Desconectado do servidor");
 
   return true;
 }
@@ -105,13 +94,11 @@ bool conectarAoServidor(BLEAddress pAddress, String novoValor) {
 
 void loop() {
   
-  if(doConnect){
-    if(mostrar){
-        if(conectarAoServidor(*pServerAddress,mensagem)){
-          Serial.println("Enviado Com Sucesso");
-       }
-       mostrar=false;
+  if(doConnect){ // se estiver pronto para conectar
+    if(mostrar){ // se o botão for apertado
+        if(conectarAoServidor(*pServerAddress,mensagem)){}
+        mostrar=false;
     }
   }
-  delay(1000);
+  delay(1000); //aguarda 1 segun
 }
