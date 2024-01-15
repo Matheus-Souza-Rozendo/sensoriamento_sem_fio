@@ -50,7 +50,7 @@ Este projeto implementa um sistema de comunicação entre dois dispositivos ESP-
 
 ## Instalação e Uso
 
-1. Clone este repositório: `git clone https://github.com/seu-username/nome-do-repo.git`
+1. Clone este repositório: `git clone https://github.com/Matheus-Souza-Rozendo/sensoriamento_sem_fio`
 2. Instale o pacote de desenvolvimento do ESP32 para a Arduino IDE. Veja [Tutorial](https://docs.espressif.com/projects/arduino-esp32/en/latest/getting_started.html)
 
 ## Licença
